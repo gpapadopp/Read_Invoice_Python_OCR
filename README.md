@@ -33,6 +33,7 @@ Program operation:
   k.	The program after performing all the above steps, will then return a success message to the user, where with the help of the graphical user interface, the above message will appear in a "message - information box".
 
 Programming language: Python v.3.8.5
+
 Programming environment: PyCharm v.2020.2
 
 
@@ -69,5 +70,6 @@ GREEK VERSION
   k.	Το πρόγραμμα αφότου εκτελέσει όλα τα παραπάνω βήματα, τότε θα επιστρέψει ένα μήνυμα επιτυχία στον χρήστη, όπου με την βοήθεια της γραφικής διεπαφής του χρήστη, θα εμφανιστεί το παραπάνω μήνυμα, σε ένα «πλαίσιο μηνυμάτων – πληροφοριών».
 
 Γλώσσα προγραμματισμού : Python v.3.8.5
+
 Προγραμματιστικό Περιβάλλον : PyCharm v.2020.2
 
