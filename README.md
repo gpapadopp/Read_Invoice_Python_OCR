@@ -38,7 +38,7 @@ Programming language: Python v.3.8.5
 Programming environment: PyCharm v.2020.2
 
 
-===============
+
 
 
 GREEK VERSION
@@ -79,4 +79,4 @@ GREEK VERSION
 
 Προγραμματιστικό Περιβάλλον : PyCharm v.2020.2
 
-=============
+
