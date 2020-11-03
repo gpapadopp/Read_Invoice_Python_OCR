@@ -1,6 +1,7 @@
 # Read_Invoice_and_Send_Email
 
 ENGLISH VERISON
+===============
 
 This application was created to send invoices and facilitate the user in managing his customer base, as well as the invoices of his customers.
 
@@ -37,7 +38,12 @@ Programming language: Python v.3.8.5
 Programming environment: PyCharm v.2020.2
 
 
+===============
+
+
 GREEK VERSION
+=============
+
 
 Η παρόν εφαρμογή δημιουργήθηκε για την αποστολή τιμολογίων και την διευκόλυνση του χρήστη στην διαχείριση του πελατολογίου του, καθώς και των τιμολογίων των πελατών του.
 
@@ -73,3 +79,4 @@ GREEK VERSION
 
 Προγραμματιστικό Περιβάλλον : PyCharm v.2020.2
 
+=============
