@@ -2,7 +2,6 @@
 
 ENGLISH VERISON
 
-## Usage
 This application was created to send invoices and facilitate the user in managing his customer base, as well as the invoices of his customers.
 
 The possibilities of the application are the following:
