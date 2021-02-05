@@ -10,9 +10,12 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 window = Tk()
 
+pdf_file_name = ''
+csv_file_name = ''
+
 def choose_csv_file():
     global csv_file_name
-    csv_file_name = filedialog.askopenfilename(initialdir="/", title="Επιλογή Πελατολογίου", filetypes=(("Excel Files (.xlsx)", "*.xlsx"), ("All Files", "*.*")))
+    csv_file_name = filedialog.askopenfilename(initialdir="/", title="Επιλογή Πελατολογίου", filetypes=(("Excel Files (.xls)", "*.xls"),("Excel Files (.xlsx)", "*.xlsx"), ("All Files", "*.*")))
     csv_textbox.config(state="normal")
     csv_textbox.delete('1.0', END)
     csv_textbox.insert(INSERT, csv_file_name)
@@ -21,6 +24,7 @@ def choose_csv_file():
     s1 = wb.sheet_by_index(0)
     s1.cell_value(0, 0)
     csv_counter.config(state="normal")
+    csv_counter.delete(1.0, END)
     csv_counter.insert(INSERT, s1.nrows)
     csv_counter.config(state="disabled")
 
@@ -28,21 +32,44 @@ def choose_pdf_file():
     global pdf_file_name
     pdf_file_name = filedialog.askopenfilename(initialdir="/", title="Επιλογή Τιμολογίων", filetypes=(("PDF Files (.pdf)", "*.pdf"), ("All Files", "*.*")))
     pdf_textbox.config(state="normal")
-    pdf_textbox.delete('1.0', END)
+    pdf_textbox.delete(1.0, END)
     pdf_textbox.insert(INSERT, pdf_file_name)
     pdf_textbox.config(state="disabled")
     with open(pdf_file_name, "rb") as pdf_file:
         pdf_reader = PdfFileReader(pdf_file)
         pdf_counter.config(state="normal")
+        pdf_counter.delete(1.0, END)
         pdf_counter.insert(INSERT, pdf_reader.numPages)
         pdf_counter.config(state="disabled")
 
+def check_csv(csv_path):
+    if os.path.isfile(csv_path):
+        return True
+    else:
+        return False
+
+def check_pdf(pdf_path):
+    if os.path.isfile(pdf_path):
+        return True
+    else:
+        return False
+
 def send_btn():
-    subject = simpledialog.askstring("ΤΟ ΘΕΜΑ ΤΟΥ e-mail.", "ΠΑΡΑΚΑΛΩ ΠΛΗΚΤΡΟΛΟΓΗΣΤΕ ΤΟ ΘΕΜΑ ΤΟΥ e-mail.")
-    body = simpledialog.askstring("ΤΟ ΚΥΡΙΩΣ ΚΕΙΜΕΝΟ ΤΟΥ e-mail.",
-                                  "ΠΑΡΑΚΑΛΩ ΠΛΗΚΤΡΟΛΟΓΗΣΤΕ ΤΟ ΚΥΡΙΩΣ ΚΕΙΜΕΝΟ ΤΟΥ e-mail.")
-    main_program(pdf_file_name, csv_file_name, subject, body)
-    mb.showinfo('Επιτυχία', 'Το πρόγραμμα ολοκληρώθηκε με επιτυχία.')
+    # Check if CSV file has inserted
+    if (check_csv(csv_file_name)):
+        # CSV file inserted
+        # Check if PDF file has inserted
+        if (check_pdf(pdf_file_name)):
+            # PDF file inserted
+            subject = simpledialog.askstring("ΤΟ ΘΕΜΑ ΤΟΥ e-mail.", "ΠΑΡΑΚΑΛΩ ΠΛΗΚΤΡΟΛΟΓΗΣΤΕ ΤΟ ΘΕΜΑ ΤΟΥ e-mail.")
+            body = simpledialog.askstring("ΤΟ ΚΥΡΙΩΣ ΚΕΙΜΕΝΟ ΤΟΥ e-mail.",
+                                            "ΠΑΡΑΚΑΛΩ ΠΛΗΚΤΡΟΛΟΓΗΣΤΕ ΤΟ ΚΥΡΙΩΣ ΚΕΙΜΕΝΟ ΤΟΥ e-mail.")
+            main_program(pdf_file_name, csv_file_name, subject, body)
+            mb.showinfo('Επιτυχία', 'Το πρόγραμμα ολοκληρώθηκε με επιτυχία.')
+        else:
+            mb.showinfo('Σφάλμα', 'Δεν έχει εισάγει αρχείο τιμολογίων.')
+    else:
+        mb.showinfo('Σφάλμα', 'Δεν έχει εισάγει αρχείο πελατολογίου.')
 
 window.title("ΑΠΟΣΤΟΛΗ ΤΙΜΟΛΟΓΙΩΝ")
 
