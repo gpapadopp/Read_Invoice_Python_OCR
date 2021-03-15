@@ -25,28 +25,7 @@ except ImportError:
     from pyPdf import PdfFileReader, PdfFileWriter
 
 import win32com.client as win32
-
-# Checking if list has duplicates
-def checkIfDuplicates_1(listOfElems):
-    ''' Check if given list contains any duplicates '''
-    if len(listOfElems) == len(set(listOfElems)):
-        return False
-    else:
-        return True
-
-# Get the index of duplicated items
-def list_duplicates_of(seq,item):
-    start_at = -1
-    locs = []
-    while True:
-        try:
-            loc = seq.index(item,start_at+1)
-        except ValueError:
-            break
-        else:
-            locs.append(loc)
-            start_at = loc
-    return locs
+import pyodbc
 
 # Merging the PDFs
 def mergePDFs(input_files_list, output_stream_str):
@@ -58,16 +37,12 @@ def mergePDFs(input_files_list, output_stream_str):
     merger.write(output_stream_str)
     merger.close()
 
-# Reversing a list
-def Reverse_List(lst):
-    return [ele for ele in reversed(lst)]
-
 # Check if file is .xls
 def check_for_xls_file(csv_file_path):
-    if '.xls' in csv_file_path:
-        return True
-    else:
+    if '.xlsx' in csv_file_path:
         return False
+    elif '.xls' in csv_file_path:
+        return True
 
 # Convert .xls to .xlsx file
 def convert_xls_to_xlsx(csv_file_path):
@@ -78,15 +53,26 @@ def convert_xls_to_xlsx(csv_file_path):
     excel.Application.Quit()
     return "C:\\temp_pdf_page_by_page\\" + "_CONVERTED_XLS.xlsx"
 
+# Delete the empty items from the list
+def deleteEmptyItems(afms_list, positions_list, emails_list):
+    length = len(emails_list)
+    index = 0
+    while index != length:
+        if emails_list[index] == "" or emails_list[index] == " ":
+            del emails_list[index]
+            del positions_list[index]
+            del afms_list[index]
+            index -= 1
+            length -= 1
+
+        index += 1
+
 # END OF NEW FEATURES
 
 files_not_send = []
 
 
-def send_email(email_recipient,
-               email_subject,
-               email_message,
-               attachment_location=''):
+def send_email(email_recipient, email_subject, email_message, attachment_location=''):
     email_sender = 'email_sender'
 
     msg = MIMEMultipart()
@@ -180,7 +166,7 @@ def main_program(pdf_file_path, csv_file_path, email_subj, email_body):
     mylist = []
     raw_position_in_excel = []
     i = 0
-    for cell in ws['Q']:
+    for cell in ws['S']: #Gia ta AFM
         i = i + 1
         if str(cell.value) != "None":
             print(cell.value)
@@ -204,64 +190,55 @@ def main_program(pdf_file_path, csv_file_path, email_subj, email_body):
     sheet = xlrd.open_workbook(csv_file_path).sheet_by_name("Worksheet")
     len3 = len(position_in_excel)
     for i in range(0, len3, 1):
-        emails.append(sheet.cell_value(position_in_excel[i] - 1, 8))
+        emails.append(sheet.cell_value(position_in_excel[i] - 1, 10)) #Gia ta emails
 
     print(cnt)
 
-    email_subject_final = "email_subject"
+    email_subject_final = email_subj
     email_body_final = email_body
 
     # NEW FEATURES
-    # CHECK IF THERE IS ANY DUPLICATE ENTRIES IN THE LIST
-    if (checkIfDuplicates_1(emails)):
-        # DUPLICATED ENTRIES FOUND IN THE LIST
-        # Get duplicates list position
-        index_of_paths = 0
-        for item in emails:
-            # GET DUPLICATES INDEX
-            duplicated_paths = []
-            duplicates_Index = list_duplicates_of(emails, item)
-            email_to_send = emails[0]
-            for duplicated_index in duplicates_Index:
-                # GET DUPLICATES ACTUAL PATH
-                duplicated_paths.append('C:/temp_pdf_page_by_page/document-page%s.pdf' % (positions[duplicated_index] - 1))
+    # DELETE ANY ITEM IN LIST THAT HAS EMPTY EMAIL
+    deleteEmptyItems(final, positions, emails)
 
-            # MERGE ALL PDFs TOGETHER
-            mergePDFs(duplicated_paths, 'C:/temp_pdf_page_by_page/duplicated-document%s.pdf' % index_of_paths)
-            i += 1
+    #Make the DB Connection
+    conn = pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, '
+                          r'*.accdb)};DBQ=' + os.getcwd() + '/program.accdb;')
+    cursor = conn.cursor()
 
-            # DELETE DUPLICATE ENTRIES FROM ALL LISTS
-            for item in Reverse_List(duplicates_Index):
-                final.pop(item)
-                positions.pop(item)
-                emails.pop(item)
+    #INSERT the VAT number, email address and page position to DB
+    for i in range(0, len(emails), 1):
+        cursor.execute("INSERT INTO program_invoices (VAT, email, position) VALUES"
+                       "("+str(final[i])+", '"+str(emails[i])+"', "+str(positions[i])+")")
 
-            # SEND EMAIL
-            send_email(email_to_send,
-                       email_subject_final,
-                       email_body_final,
-                       'C:/temp_pdf_page_by_page/duplicated-document%s.pdf' % index_of_paths)
-            index_of_paths += 1
+    #Loop to select one by one the emails
+    duplicated_counter = 0
+    for vat in final:
+        #Execute query to get all emails and page positions to this VAT number
+        cursor.execute("SELECT program_invoices.VAT, program_invoices.email, program_invoices.position "
+                       "FROM program_invoices "
+                       "WHERE VAT=" + str(vat))
+        #Fetch all information
+        dataBaseData = cursor.fetchall()
+        if len(dataBaseData) == 1:
+            #If recipient is only one person, then just send the email, and delete the entry from the database
+            send_email(dataBaseData[0].email, email_subject_final, email_body_final, 'C:/temp_pdf_page_by_page/document-page%s.pdf' % str(int(dataBaseData[0].position)-1))
+            cursor.execute("DELETE * "
+                           "FROM program_invoices "
+                           "WHERE VAT=" + str(vat))
+        elif len(dataBaseData) > 1:
+            # If recipient is NOT one person, then merge all pages together, then send the email, and final delete the entries from the database
+            pdfsToMerge = []
+            for pdf in dataBaseData:
+                pdfsToMerge.append('C:/temp_pdf_page_by_page/document-page%s.pdf' % str(int(pdf.position)-1))
 
-        # AFTER FOR LOOP COMPLETION CHECK IF EVERY EMAIL HAS SENT
-        # IF NOT, THEN THE FOLLOWING FOR LOOP WILL EXECUTE TO SEND THE REST OF THE EMAILS
-        if len(emails) != 0:
-            for i in range(0, len(emails), 1):
-                send_email(emails[i],
-                            email_subject_final,
-                            email_body_final,
-                            'C:/temp_pdf_page_by_page/document-page%s.pdf' % (positions[i] - 1))
+            mergePDFs(pdfsToMerge, 'C:/temp_pdf_page_by_page/duplicated-item%s.pdf' % str(duplicated_counter))
+            send_email(dataBaseData[0].email, email_subject_final, email_body_final, 'C:/temp_pdf_page_by_page/duplicated-item%s.pdf' % str(duplicated_counter))
+            cursor.execute("DELETE * "
+                           "FROM program_invoices. "
+                           "WHERE VAT=" + str(vat))
+            duplicated_counter = duplicated_counter + 1
 
-    else:
-        # THERE IS NO DUPLICATED ITEMS IN THE LIST
-        for i in range(0, len(emails), 1):
-            send_email(emails[i],
-                       email_subject_final,
-                       email_body_final,
-                       'C:/temp_pdf_page_by_page/document-page%s.pdf' % (positions[i] - 1))
-    #END OF NEW FEATURES
-
-    print(files_not_send)
     if len(files_not_send) != 0:
         try:
             os.mkdir("C:\\INVOICES_NOT_SEND")
